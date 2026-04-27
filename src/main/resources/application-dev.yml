@@ -1,0 +1,30 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# DEV profile — used when SPRING_PROFILES_ACTIVE=dev (the default)
+# Connects to a real PostgreSQL instance on your local machine.
+# ─────────────────────────────────────────────────────────────────────────────
+
+spring:
+  datasource:
+    # jdbc:postgresql://HOST:PORT/DATABASE_NAME
+    url: jdbc:postgresql://localhost:5432/nightout_dev
+    username: postgres
+    password: postgres
+    # HikariCP is Spring Boot's default connection pool.
+    # It keeps a pool of open database connections ready to reuse,
+    # which is much faster than opening a new connection per request.
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+
+  jpa:
+    hibernate:
+      # update: Hibernate compares your @Entity classes to the existing schema
+      # and adds/modifies columns as needed. NEVER use 'create-drop' in dev
+      # if you want your data to survive restarts.
+      ddl-auto: update
+    # PostgreSQL dialect tells Hibernate which SQL flavour to generate
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+  level:
+    com.nightout: DEBUG

@@ -1,0 +1,85 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Base configuration — applies to ALL profiles unless overridden.
+# Profile-specific files (application-dev.yml, application-test.yml) can
+# override any of these values by repeating the same key with a new value.
+# ─────────────────────────────────────────────────────────────────────────────
+
+spring:
+  application:
+    name: nightout
+
+  # Active profile — override this via environment variable in production:
+  # SPRING_PROFILES_ACTIVE=dev  or  SPRING_PROFILES_ACTIVE=test
+  profiles:
+    active: dev
+
+  # JPA / Hibernate settings shared across all profiles
+  jpa:
+    # Show the SQL Hibernate generates in the console (useful for debugging)
+    show-sql: true
+    properties:
+      hibernate:
+        # Pretty-print the SQL so it's readable
+        format_sql: true
+    # open-in-view: false tells Spring NOT to keep the database session open
+    # for the entire HTTP request. This is a best practice — it forces you
+    # to load all needed data inside your @Service methods.
+    open-in-view: false
+
+  # Jackson (JSON serialiser) settings
+  jackson:
+    # Serialize dates as ISO strings ("2024-03-22") not timestamps (1711065600)
+    serialization:
+      write-dates-as-timestamps: false
+    # Ignore unknown JSON fields on deserialization (more resilient APIs)
+    deserialization:
+      fail-on-unknown-properties: false
+
+  # Redis connection — used for caching the personalised venue feed
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+# ── Logging ──────────────────────────────────────────────────────────────────
+# SLF4J (the logging facade) is already included via spring-boot-starter.
+# Logback is the default implementation. We configure levels and file output here.
+logging:
+  level:
+    # Your application code: DEBUG in dev (verbose), INFO in prod
+    com.nightout: DEBUG
+    # Hibernate SQL params — shows the actual values substituted into queries
+    org.hibernate.orm.jdbc.bind: TRACE
+    # Spring Security debug — very verbose, useful when debugging auth issues
+    org.springframework.security: DEBUG
+  file:
+    # Write logs to a file as well as the console
+    name: logs/nightout.log
+  logback:
+    rollingpolicy:
+      # Create a new log file every day, keep 30 days of history
+      max-history: 30
+      file-name-pattern: logs/nightout-%d{yyyy-MM-dd}.log
+
+# ── Actuator (health checks + metrics) ───────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        # Expose all actuator endpoints (restrict in production!)
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  # Enable Prometheus metrics endpoint at /actuator/prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# ── JWT configuration ─────────────────────────────────────────────────────────
+# Store secrets in environment variables in production, never in source control.
+app:
+  jwt:
+    secret: "nightout-super-secret-key-change-this-in-production-minimum-256-bits"
+    expiration-ms: 86400000   # 24 hours in milliseconds
