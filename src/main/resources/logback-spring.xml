@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Logback configuration — the logging framework Spring Boot uses by default.
+
+    HOW LOGGING WORKS IN SPRING:
+    Your code uses SLF4J (Simple Logging Facade for Java) — an abstraction layer.
+    You write:   log.info("message")
+    SLF4J routes it to Logback (the implementation) at runtime.
+    This means you could swap Logback for Log4j2 without changing a single line of code.
+
+    LOG LEVELS (least → most verbose):
+      ERROR  — something broke and needs immediate attention
+      WARN   — something unexpected happened but the app is still running
+      INFO   — normal application events (startup, user actions, etc.)
+      DEBUG  — detailed flow information useful during development
+      TRACE  — extremely granular (usually only for library internals)
+
+    Each level includes all levels above it:
+    setting INFO means you see INFO + WARN + ERROR (but NOT DEBUG or TRACE).
+-->
+<configuration>
+
+    <!-- ── PROPERTIES ─────────────────────────────────────────────────────── -->
+    <!-- Reusable variables referenced below with ${NAME} -->
+    <property name="LOG_DIR"     value="logs"/>
+    <property name="APP_NAME"    value="nightout"/>
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+
+    <!-- ── APPENDER: CONSOLE ──────────────────────────────────────────────── -->
+    <!--
+        An appender is a destination for log output.
+        ConsoleAppender writes to stdout — visible in your terminal.
+        In development this is the primary place you read logs.
+    -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!--
+                %d{...}      — timestamp
+                [%thread]    — which thread logged this (main, http-nio-8080-exec-1, etc.)
+                %-5level     — log level, padded to 5 chars (INFO , DEBUG, ERROR)
+                %logger{36}  — logger name, trimmed to 36 chars
+                %msg%n       — the actual message + newline
+            -->
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ── APPENDER: ALL LOGS FILE ───────────────────────────────────────── -->
+    <!--
+        RollingFileAppender writes to a file and rotates it automatically.
+        TimeBasedRollingPolicy creates a new file each day and deletes old ones.
+        This prevents log files from growing indefinitely.
+    -->
+    <appender name="FILE_ALL" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${APP_NAME}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Archive pattern: nightout-2024-03-22.log -->
+            <fileNamePattern>${LOG_DIR}/${APP_NAME}-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- Keep 30 days of log history -->
+            <maxHistory>30</maxHistory>
+            <!-- Max total log storage: 1GB -->
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ── APPENDER: ERRORS-ONLY FILE ────────────────────────────────────── -->
+    <!--
+        A separate file that ONLY contains ERROR level messages.
+        This is the file your monitoring system (or you at 3am) checks first.
+        ThresholdFilter discards anything below ERROR level.
+    -->
+    <appender name="FILE_ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${APP_NAME}-errors.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/${APP_NAME}-errors-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>90</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <!-- Include the full stack trace for errors -->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] ERROR %logger{36} - %msg%n%ex{full}%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ── ASYNC WRAPPER ──────────────────────────────────────────────────── -->
+    <!--
+        AsyncAppender buffers log events in a queue and writes them on a
+        separate thread. This prevents slow I/O (disk writes) from blocking
+        your HTTP request threads.
+        discardingThreshold=0 means never discard events (even under load).
+    -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="FILE_ALL"/>
+    </appender>
+
+    <!-- ── LOGGER CONFIGURATION ───────────────────────────────────────────── -->
+
+    <!-- Your application code — DEBUG in development (set to INFO for production) -->
+    <logger name="com.nightout" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+        <appender-ref ref="FILE_ERROR"/>
+    </logger>
+
+    <!-- Hibernate SQL — shows the generated SQL and bound parameters -->
+    <!-- Set to WARN in production (very verbose at DEBUG) -->
+    <logger name="org.hibernate.SQL"          level="DEBUG"/>
+    <logger name="org.hibernate.orm.jdbc.bind" level="TRACE"/>
+
+    <!-- Spring Security — DEBUG helps diagnose auth/authz issues -->
+    <logger name="org.springframework.security" level="DEBUG"/>
+
+    <!-- Spring Web — shows URL mapping and request processing -->
+    <logger name="org.springframework.web" level="INFO"/>
+
+    <!-- Connection pool — useful for diagnosing connection leak issues -->
+    <logger name="com.zaxxer.hikari" level="INFO"/>
+
+    <!-- ── ROOT LOGGER ────────────────────────────────────────────────────── -->
+    <!--
+        The root logger catches everything not matched by a specific logger above.
+        INFO level means all libraries log INFO and above — not too noisy.
+    -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+        <appender-ref ref="FILE_ERROR"/>
+    </root>
+
+</configuration>

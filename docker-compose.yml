@@ -1,0 +1,140 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Docker Compose — NightOut full local stack
+#
+# WHAT IS DOCKER COMPOSE?
+# Docker Compose lets you define and run multi-container applications.
+# Instead of starting PostgreSQL, Redis, and your app manually in three
+# terminals, you run ONE command: docker compose up
+# Compose reads this file, pulls the images, creates containers, connects
+# them on a shared network, and starts everything in the right order.
+#
+# KEY CONCEPTS:
+#   image:      — which Docker image to use (pulled from Docker Hub)
+#   build:      — build from a local Dockerfile instead of pulling an image
+#   ports:      — HOST_PORT:CONTAINER_PORT — maps container port to your machine
+#   environment:— environment variables passed into the container
+#   volumes:    — persist data outside the container (survives restarts)
+#   depends_on: — ensures containers start in the right order
+#   networks:   — all services on the same network can reach each other by name
+#                 e.g. the app can connect to "postgres:5432" not "localhost:5432"
+#   healthcheck:— Docker polls this command; dependent services wait for HEALTHY
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL — primary database ─────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine       # Alpine = smaller image (~50MB vs ~400MB)
+    container_name: nightout-postgres
+    environment:
+      POSTGRES_DB: nightout_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"                 # Expose on host so you can use pgAdmin/DBeaver
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Named volume — data survives container restarts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nightout-network
+
+  # ── Redis — cache layer ────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: nightout-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes   # Enable persistence (AOF log)
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - nightout-network
+
+  # ── NightOut Spring Boot app ───────────────────────────────────────────────
+  app:
+    build:
+      context: .            # Build context = current directory (where pom.xml is)
+      dockerfile: Dockerfile
+    container_name: nightout-app
+    ports:
+      - "8080:8080"
+    environment:
+      # Override application.yml values via environment variables.
+      # Spring Boot maps SPRING_DATASOURCE_URL → spring.datasource.url automatically.
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/nightout_dev
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      # Override the JWT secret with a proper secret in production
+      APP_JWT_SECRET: "nightout-docker-secret-change-in-production-256bits"
+      APP_JWT_EXPIRATION_MS: 86400000
+      # JVM memory tuning for containers
+      JAVA_OPTS: "-Xms256m -Xmx512m"
+    depends_on:
+      postgres:
+        condition: service_healthy   # Wait until postgres is ready before starting
+      redis:
+        condition: service_healthy
+    networks:
+      - nightout-network
+    restart: unless-stopped          # Auto-restart if the app crashes
+
+  # ── Prometheus — metrics collection ───────────────────────────────────────
+  # Prometheus scrapes /actuator/prometheus on your app every 15s
+  # and stores the time-series data.
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: nightout-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - nightout-network
+    depends_on:
+      - app
+
+  # ── Grafana — metrics visualisation ───────────────────────────────────────
+  # Grafana reads from Prometheus and renders dashboards.
+  # Access at: http://localhost:3000  (admin / admin)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: nightout-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - nightout-network
+    depends_on:
+      - prometheus
+
+# ── Named volumes (data persists across container restarts) ───────────────────
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+# ── Network (all containers can reach each other by service name) ─────────────
+networks:
+  nightout-network:
+    driver: bridge

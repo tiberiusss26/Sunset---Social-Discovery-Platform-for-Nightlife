@@ -1,0 +1,29 @@
+# Prometheus configuration — tells Prometheus what to scrape and how often.
+#
+# Prometheus works by PULLING metrics from targets on a schedule (scraping).
+# Your Spring Boot app exposes metrics at /actuator/prometheus.
+# Prometheus fetches that URL every 15 seconds and stores the data.
+# Grafana then queries Prometheus to build dashboards.
+
+global:
+  scrape_interval:     15s   # Default: scrape every 15 seconds
+  evaluation_interval: 15s   # Evaluate alerting rules every 15 seconds
+
+scrape_configs:
+
+  # ── Prometheus itself ──────────────────────────────────────────────────────
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # ── NightOut Spring Boot app ───────────────────────────────────────────────
+  - job_name: 'nightout-app'
+    # metrics_path is /actuator/prometheus (the default for Spring Boot Actuator)
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 15s
+    static_configs:
+      # 'app' resolves to the nightout-app container via Docker's internal DNS
+      - targets: ['app:8080']
+        labels:
+          application: 'nightout'
+          environment: 'local'
