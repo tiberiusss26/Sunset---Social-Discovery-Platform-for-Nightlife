@@ -12,7 +12,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Stage 1: Build ────────────────────────────────────────────────────────────
-FROM eclipse-temurin:17-jdk-alpine AS builder
+FROM eclipse-temurin:17-jdk AS builder
 
 WORKDIR /build
 
@@ -33,11 +33,11 @@ COPY src ./src
 RUN ./gradlew bootJar -x test --no-daemon  # Skip tests, tests run in CI pipeline
 
 # ── Stage 2: Run ──────────────────────────────────────────────────────────────
-FROM eclipse-temurin:17-jre-alpine AS runner
+FROM eclipse-temurin:17-jre AS runner
 
 # Run as a non-root user — security best practice
 # Never run production services as root inside containers.
-RUN addgroup -S nightout && adduser -S nightout -G nightout
+RUN groupadd -r nightout && useradd -r -g nightout nightout
 USER nightout
 
 WORKDIR /app

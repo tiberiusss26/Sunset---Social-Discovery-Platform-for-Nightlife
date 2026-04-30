@@ -26,6 +26,7 @@ services:
 
   # ── PostgreSQL — primary database ─────────────────────────────────────────
   postgres:
+#    platform: arm64
     image: postgres:16-alpine       # Alpine = smaller image (~50MB vs ~400MB)
     container_name: nightout-postgres
     environment:
