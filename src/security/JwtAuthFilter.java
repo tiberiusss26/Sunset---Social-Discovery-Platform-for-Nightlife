@@ -32,6 +32,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        log.info("TIBIBOSUFILTER HIT: {}", request.getServletPath());
+
+        String path = request.getServletPath();
+
+        if (path.startsWith("/api/auth") || path.startsWith("/actuator")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String token = extractToken(request);
 
         if (token != null && jwtTokenProvider.isValid(token)) {
@@ -39,7 +48,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             UUID userId = jwtTokenProvider.extractUserId(token);
 
             List<GrantedAuthority> authorities = roles.stream()
-                    .map(SimpleGrantedAuthority::new)
+                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                     .collect(Collectors.toList());
 
             UsernamePasswordAuthenticationToken auth =
