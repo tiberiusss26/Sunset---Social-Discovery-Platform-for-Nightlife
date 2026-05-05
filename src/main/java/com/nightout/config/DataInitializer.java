@@ -30,7 +30,7 @@ import java.time.LocalTime;
  * Running the app multiple times won't duplicate rows.
  */
 @Component
-@Profile("dev")
+//@Profile("dev")
 @RequiredArgsConstructor
 @Slf4j
 public class DataInitializer implements CommandLineRunner {

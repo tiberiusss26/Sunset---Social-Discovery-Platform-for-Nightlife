@@ -42,23 +42,21 @@ public class SecurityConfig {
                 .sessionManagement(s ->
                         s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-//                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                        // ── PUBLIC ─────────────────────────────────────────────────
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/venues/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/nights/**").permitAll()
-                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                        .requestMatchers("/actuator/prometheus").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
-
+                        // ── ROLE-PROTECTED ─────────────────────────────────────────
                         .requestMatchers(HttpMethod.POST, "/api/venues/**")
                         .hasAnyRole("VENUE_OWNER", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/venues/**")
                         .hasAnyRole("VENUE_OWNER", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/venues/**")
                         .hasAnyRole("VENUE_OWNER", "ADMIN")
-
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // ── EVERYTHING ELSE NEEDS A TOKEN ──────────────────────────
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
