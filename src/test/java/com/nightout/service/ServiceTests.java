@@ -1,217 +1,339 @@
-package com.nightout.config;
+package com.nightout.service;
 
 import com.nightout.domain.*;
+import com.nightout.dto.*;
+import com.nightout.exception.*;
 import com.nightout.repository.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.*;
 
-/**
- * DataInitializer — seeds the database with realistic test data on startup.
- *
- * WHY CommandLineRunner?
- * CommandLineRunner is a Spring interface with one method: run().
- * Spring calls run() automatically after the application context is fully
- * started — after all beans are wired and the database schema is ready.
- * This is the right place to insert seed data.
- *
- * @Profile("dev") — this bean ONLY exists in the dev profile.
- * It will NOT run in tests (which use the 'test' profile) or in production.
- * This prevents seed data from polluting your test assertions or prod DB.
- *
- * The seeder is IDEMPOTENT — it checks before inserting.
- * Running the app multiple times won't duplicate rows.
- */
-@Component
-@Profile("dev")
-@RequiredArgsConstructor
-@Slf4j
-public class DataInitializer implements CommandLineRunner {
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
 
-    private final RoleRepository roleRepository;
-    private final UserRepository userRepository;
-    private final VenueRepository venueRepository;
-    private final NightRepository nightRepository;
-    private final TagRepository tagRepository;
-    private final PasswordEncoder passwordEncoder;
+@ExtendWith(MockitoExtension.class)
+class VenueServiceTest {
 
-    @Override
-    @Transactional
-    public void run(String... args) {
-        log.info("=== Seeding development data ===");
-        seedRoles();
-        seedUsers();
-        seedVenuesAndNights();
-        log.info("=== Seeding complete ===");
+    @Mock private VenueRepository venueRepository;
+    @Mock private UserRepository userRepository;
+    @Mock private VenueRatingRepository ratingRepository;
+    @Mock private RsvpRepository rsvpRepository;
+    @InjectMocks private VenueService venueService;
+
+    private User owner;
+    private Venue venue;
+    private UUID ownerId, venueId;
+
+    @BeforeEach
+    void setUp() {
+        ownerId = UUID.randomUUID();
+        venueId = UUID.randomUUID();
+        owner = User.builder().username("owner").email("o@t.com").passwordHash("h").build();
+        owner.setId(ownerId);
+        Address address = Address.builder().street("s").city("Bucharest").country("RO").build();
+        venue = Venue.builder().name("Test Club").type(Venue.VenueType.CLUB)
+                .address(address).owner(owner).averageRating(0.0).totalRatings(0).build();
+        venue.setId(venueId);
     }
 
-    // ── STEP 1: Roles ─────────────────────────────────────────────────────────
+    @Test @DisplayName("createVenue: returns response when owner exists")
+    void createVenue_whenOwnerExists_returnsResponse() {
+        given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
+        given(venueRepository.save(any())).willReturn(venue);
+        CreateVenueRequest req = CreateVenueRequest.builder()
+                .name("Test Club").type(Venue.VenueType.CLUB)
+                .address(AddressRequest.builder().street("s").city("c").build()).build();
 
-    private void seedRoles() {
-        for (Role.RoleName name : Role.RoleName.values()) {
-            if (!roleRepository.existsByName(name)) {
-                roleRepository.save(Role.builder().name(name).build());
-                log.debug("Created role: {}", name);
-            }
-        }
+        VenueResponse res = venueService.createVenue(req, ownerId);
+
+        assertThat(res.getName()).isEqualTo("Test Club");
+        then(venueRepository).should(times(1)).save(any());
     }
 
-    // ── STEP 2: Users ─────────────────────────────────────────────────────────
+    @Test @DisplayName("createVenue: throws when owner not found")
+    void createVenue_whenOwnerNotFound_throws() {
+        given(userRepository.findById(ownerId)).willReturn(Optional.empty());
+        CreateVenueRequest req = CreateVenueRequest.builder().name("x").type(Venue.VenueType.CLUB)
+                .address(AddressRequest.builder().street("s").city("c").build()).build();
 
-    private void seedUsers() {
-        if (userRepository.existsByEmail("admin@nightout.com")) return;
+        assertThatThrownBy(() -> venueService.createVenue(req, ownerId))
+                .isInstanceOf(ResourceNotFoundException.class);
+        then(venueRepository).should(never()).save(any());
+    }
 
-        Role adminRole  = roleRepository.findByName(Role.RoleName.ROLE_ADMIN).orElseThrow();
-        Role userRole   = roleRepository.findByName(Role.RoleName.ROLE_USER).orElseThrow();
-        Role ownerRole  = roleRepository.findByName(Role.RoleName.ROLE_VENUE_OWNER).orElseThrow();
+    @Test @DisplayName("getVenueById: returns response when exists")
+    void getVenueById_whenExists_returnsResponse() {
+        given(venueRepository.findById(venueId)).willReturn(Optional.of(venue));
+        assertThat(venueService.getVenueById(venueId).getId()).isEqualTo(venueId);
+    }
 
-        // Admin account
-        User admin = User.builder()
-                .username("admin")
-                .email("admin@nightout.com")
-                .passwordHash(passwordEncoder.encode("Admin1234!"))
-                .bio("NightOut platform administrator")
+    @Test @DisplayName("getVenueById: throws when not found")
+    void getVenueById_whenNotFound_throws() {
+        given(venueRepository.findById(venueId)).willReturn(Optional.empty());
+        assertThatThrownBy(() -> venueService.getVenueById(venueId))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test @DisplayName("deleteVenue: deletes when requester is owner")
+    void deleteVenue_whenOwner_deletes() {
+        given(venueRepository.findById(venueId)).willReturn(Optional.of(venue));
+        venueService.deleteVenue(venueId, ownerId, false);
+        then(venueRepository).should().delete(venue);
+    }
+
+    @Test @DisplayName("deleteVenue: deletes when requester is admin")
+    void deleteVenue_whenAdmin_deletes() {
+        given(venueRepository.findById(venueId)).willReturn(Optional.of(venue));
+        venueService.deleteVenue(venueId, UUID.randomUUID(), true);
+        then(venueRepository).should().delete(venue);
+    }
+
+    @Test @DisplayName("deleteVenue: throws when non-owner non-admin tries")
+    void deleteVenue_whenIntruder_throws() {
+        given(venueRepository.findById(venueId)).willReturn(Optional.of(venue));
+        assertThatThrownBy(() -> venueService.deleteVenue(venueId, UUID.randomUUID(), false))
+                .isInstanceOf(UnauthorizedException.class);
+        then(venueRepository).should(never()).delete(any());
+    }
+
+    @Test @DisplayName("addRating: creates rating and updates venue average")
+    void addRating_createsAndUpdatesAverage() {
+        given(venueRepository.findById(venueId)).willReturn(Optional.of(venue));
+        given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
+        given(ratingRepository.findByUserIdAndVenueId(ownerId, venueId)).willReturn(Optional.empty());
+        VenueRating saved = VenueRating.builder().user(owner).venue(venue).score(5).build();
+        given(ratingRepository.save(any())).willReturn(saved);
+        given(venueRepository.save(any())).willReturn(venue);
+
+        RatingResponse res = venueService.addRating(venueId, ownerId,
+                CreateRatingRequest.builder().score(5).comment("Great!").build());
+
+        assertThat(res.getScore()).isEqualTo(5);
+        then(venueRepository).should().save(venue);
+    }
+
+    @Test @DisplayName("getRankedVenues: returns paginated summaries")
+    void getRankedVenues_returnsPaginatedSummaries() {
+        User u = User.builder().username("u").email("u@t.com").passwordHash("h").build();
+        u.setId(ownerId);
+        given(userRepository.findById(ownerId)).willReturn(Optional.of(u));
+        given(venueRepository.findRankedVenues(any(), any(), any()))
+                .willReturn(new PageImpl<>(List.of(venue)));
+
+        PageResponse<VenueSummary> res =
+                venueService.getRankedVenues(ownerId, LocalDate.now(), PageRequest.of(0, 10));
+
+        assertThat(res.getContent()).hasSize(1);
+        assertThat(res.getContent().get(0).getName()).isEqualTo("Test Club");
+    }
+}
+
+@ExtendWith(MockitoExtension.class)
+class NightServiceTest {
+
+    @Mock private NightRepository nightRepository;
+    @Mock private VenueRepository venueRepository;
+    @Mock private TagRepository tagRepository;
+    @InjectMocks private NightService nightService;
+
+    private User owner;
+    private Venue venue;
+    private Night night;
+    private UUID ownerId, venueId, nightId;
+
+    @BeforeEach
+    void setUp() {
+        ownerId = UUID.randomUUID(); venueId = UUID.randomUUID(); nightId = UUID.randomUUID();
+        owner = User.builder().username("owner").email("o@t.com").passwordHash("h").build();
+        owner.setId(ownerId);
+        Venue v = Venue.builder().name("Club").type(Venue.VenueType.CLUB)
+                .address(Address.builder().street("s").city("c").build())
+                .owner(owner).averageRating(0.0).totalRatings(0).build();
+        v.setId(venueId);
+        venue = v;
+        night = Night.builder().venue(venue).title("Test Night")
+                .date(LocalDate.now().plusDays(1)).startTime(LocalTime.of(22,0)).active(true).build();
+        night.setId(nightId);
+    }
+
+    @Test @DisplayName("createNight: creates with tags when owner calls")
+    void createNight_whenOwner_creates() {
+        given(venueRepository.findById(venueId)).willReturn(Optional.of(venue));
+        given(nightRepository.save(any())).willReturn(night);
+        given(tagRepository.findByNameIgnoreCase("house")).willReturn(
+                Optional.of(com.nightout.domain.Tag.builder().name("house").build()));
+
+        NightResponse res = nightService.createNight(venueId, CreateNightRequest.builder()
+                .title("Test Night").date(LocalDate.now().plusDays(1))
+                .startTime(LocalTime.of(22,0)).tags(List.of("house")).build(), ownerId);
+
+        assertThat(res.getTitle()).isEqualTo("Test Night");
+        then(nightRepository).should().save(any());
+    }
+
+    @Test @DisplayName("createNight: throws when not owner")
+    void createNight_whenNotOwner_throws() {
+        given(venueRepository.findById(venueId)).willReturn(Optional.of(venue));
+        assertThatThrownBy(() -> nightService.createNight(venueId, CreateNightRequest.builder()
+                        .title("x").date(LocalDate.now().plusDays(1)).startTime(LocalTime.of(22,0)).build(),
+                UUID.randomUUID())).isInstanceOf(UnauthorizedException.class);
+        then(nightRepository).should(never()).save(any());
+    }
+
+    @Test @DisplayName("createNight: creates new tag when it does not exist")
+    void createNight_whenTagMissing_createsNewTag() {
+        given(venueRepository.findById(venueId)).willReturn(Optional.of(venue));
+        given(nightRepository.save(any())).willReturn(night);
+        given(tagRepository.findByNameIgnoreCase("afro")).willReturn(Optional.empty());
+        given(tagRepository.save(any())).willReturn(com.nightout.domain.Tag.builder().name("afro").build());
+
+        nightService.createNight(venueId, CreateNightRequest.builder()
+                .title("T").date(LocalDate.now().plusDays(1))
+                .startTime(LocalTime.of(22,0)).tags(List.of("afro")).build(), ownerId);
+
+        then(tagRepository).should().save(any(com.nightout.domain.Tag.class));
+    }
+
+    @Test @DisplayName("getNightById: returns response when exists")
+    void getNightById_whenExists_returnsResponse() {
+        given(nightRepository.findById(nightId)).willReturn(Optional.of(night));
+        assertThat(nightService.getNightById(nightId, null).getTitle()).isEqualTo("Test Night");
+    }
+
+    @Test @DisplayName("deleteNight: throws when not owner")
+    void deleteNight_whenNotOwner_throws() {
+        given(nightRepository.findById(nightId)).willReturn(Optional.of(night));
+        assertThatThrownBy(() -> nightService.deleteNight(nightId, UUID.randomUUID()))
+                .isInstanceOf(UnauthorizedException.class);
+        then(nightRepository).should(never()).delete(any());
+    }
+
+    @Test
+    void getNightsForVenue_returnsPage() {
+        Night n1 = Night.builder()
+                .title("A")
+                .venue(venue)
+                .tags(Set.of())
                 .build();
-        admin.addRole(adminRole);
-        admin.addRole(userRole);
-        userRepository.save(admin);
 
-        // Venue owner 1 — owns Club Nova
-        User owner1 = User.builder()
-                .username("clubnova_owner")
-                .email("owner@clubnova.com")
-                .passwordHash(passwordEncoder.encode("Owner1234!"))
-                .bio("Owner of Club Nova — the city's premier electronic music venue")
+        given(nightRepository.findByVenueIdOrderByDateDesc(eq(venueId), any()))
+                .willReturn(new PageImpl<>(List.of(n1)));
+
+        PageResponse<NightSummary> res =
+                nightService.getNightsForVenue(venueId, PageRequest.of(0, 10));
+
+        assertThat(res.getContent()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("createNight: works when tags are null")
+    void createNight_whenTagsNull_stillCreatesNight() {
+        given(venueRepository.findById(venueId)).willReturn(Optional.of(venue));
+        given(nightRepository.save(any())).willReturn(night);
+
+        CreateNightRequest req = CreateNightRequest.builder()
+                .title("T")
+                .date(LocalDate.now().plusDays(1))
+                .startTime(LocalTime.of(22,0))
+                .tags(null)
                 .build();
-        owner1.addRole(ownerRole);
-        owner1.addRole(userRole);
-        userRepository.save(owner1);
 
-        // Venue owner 2 — owns Skybar
-        User owner2 = User.builder()
-                .username("skybar_owner")
-                .email("owner@skybar.com")
-                .passwordHash(passwordEncoder.encode("Owner1234!"))
-                .bio("Managing director at Skybar Rooftop")
-                .build();
-        owner2.addRole(ownerRole);
-        owner2.addRole(userRole);
-        userRepository.save(owner2);
+        nightService.createNight(venueId, req, ownerId);
 
-        // Regular users
-        User alice = createRegularUser("alice", "alice@example.com", "Nightlife explorer 🌙");
-        User bob   = createRegularUser("bob",   "bob@example.com",   "House music lover 🎵");
-        User carol = createRegularUser("carol", "carol@example.com", "Always up for a good time");
+        then(tagRepository).should(never()).findByNameIgnoreCase(any());
+    }
+}
 
-        // Build a small social graph: alice follows bob and carol
-        alice.follow(bob);
-        alice.follow(carol);
-        bob.follow(alice);
-        userRepository.save(alice);
-        userRepository.save(bob);
+@ExtendWith(MockitoExtension.class)
+class RsvpServiceTest {
 
-        log.info("Seeded {} users", userRepository.count());
+    @Mock private RsvpRepository rsvpRepository;
+    @Mock private NightRepository nightRepository;
+    @Mock private UserRepository userRepository;
+    @Mock private NotificationService notificationService;
+    @InjectMocks private RsvpService rsvpService;
+
+    private User user;
+    private Night night;
+    private UUID userId, nightId;
+
+    @BeforeEach
+    void setUp() {
+        userId = UUID.randomUUID(); nightId = UUID.randomUUID();
+        user = User.builder().username("alice").email("alice@t.com").passwordHash("h").build();
+        user.setId(userId);
+        User owner = User.builder().username("o").email("ow@t.com").passwordHash("h").build();
+        Venue venue = Venue.builder().name("Club").type(Venue.VenueType.CLUB)
+                .address(Address.builder().street("s").city("c").build())
+                .owner(owner).averageRating(0.0).totalRatings(0).build();
+        night = Night.builder().venue(venue).title("Night")
+                .date(LocalDate.now().plusDays(1)).startTime(LocalTime.of(22,0))
+                .tableCapacity(50).active(true).build();
+        night.setId(nightId);
     }
 
-    private User createRegularUser(String username, String email, String bio) {
-        Role userRole = roleRepository.findByName(Role.RoleName.ROLE_USER).orElseThrow();
-        User user = User.builder()
-                .username(username).email(email)
-                .passwordHash(passwordEncoder.encode("User1234!"))
-                .bio(bio).build();
-        user.addRole(userRole);
-        return userRepository.save(user);
+    @Test @DisplayName("createRsvp GOING: saves and notifies")
+    void createRsvp_going_savesAndNotifies() {
+        given(nightRepository.findById(nightId)).willReturn(Optional.of(night));
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(rsvpRepository.findByUserIdAndNightId(userId, nightId)).willReturn(Optional.empty());
+        Rsvp saved = Rsvp.builder().user(user).night(night).status(Rsvp.RsvpStatus.GOING).build();
+        given(rsvpRepository.save(any())).willReturn(saved);
+
+        RsvpResponse res = rsvpService.createOrUpdateRsvp(nightId, userId,
+                CreateRsvpRequest.builder().status(Rsvp.RsvpStatus.GOING).tableSize(2).build());
+
+        assertThat(res.getStatus()).isEqualTo("GOING");
+        then(notificationService).should().sendRsvpConfirmation(user, night);
     }
 
-    // ── STEP 3: Venues and nights ─────────────────────────────────────────────
+    @Test @DisplayName("createRsvp: throws for past night")
+    void createRsvp_pastNight_throws() {
+        night.setDate(LocalDate.now().minusDays(1));
+        given(nightRepository.findById(nightId)).willReturn(Optional.of(night));
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
 
-    private void seedVenuesAndNights() {
-        if (venueRepository.count() > 0) return;
-
-        User owner1 = userRepository.findByEmail("owner@clubnova.com").orElseThrow();
-        User owner2 = userRepository.findByEmail("owner@skybar.com").orElseThrow();
-
-        // Tags
-        Tag houseTag   = getOrCreateTag("house music");
-        Tag technoTag  = getOrCreateTag("techno");
-        Tag rooftopTag = getOrCreateTag("rooftop");
-        Tag liveTag    = getOrCreateTag("live act");
-        Tag dresscode  = getOrCreateTag("dress code");
-
-        // ── Club Nova ──────────────────────────────────────────────────────────
-        Address novaAddress = Address.builder()
-                .street("Strada Victoriei 42").city("Bucharest")
-                .postalCode("010072").country("Romania")
-                .latitude(44.4396).longitude(26.0963).build();
-
-        Venue clubNova = Venue.builder()
-                .name("Club Nova").type(Venue.VenueType.CLUB)
-                .description("Bucharest's premier underground electronic music club. " +
-                        "State-of-the-art sound system, internationally acclaimed DJs.")
-                .address(novaAddress).owner(owner1)
-                .averageRating(4.7).totalRatings(238).verified(true).build();
-        venueRepository.save(clubNova);
-
-        // Tonight's night at Club Nova
-        Night novaTonight = Night.builder()
-                .venue(clubNova).title("Deep House Friday")
-                .description("Join us for an all-night deep house session with residents DJ Mara and Ion B.")
-                .date(LocalDate.now()).startTime(LocalTime.of(23, 0))
-                .specialGuest(false).theme("Deep House")
-                .tableCapacity(40).active(true).build();
-        novaTonight.getTags().add(houseTag);
-        novaTonight.getTags().add(dresscode);
-        nightRepository.save(novaTonight);
-
-        // Special event next weekend
-        Night novaSpecial = Night.builder()
-                .venue(clubNova).title("Solomun Guest Night")
-                .description("An unmissable night. Solomun plays an exclusive 6-hour set.")
-                .date(LocalDate.now().plusDays(7)).startTime(LocalTime.of(22, 0))
-                .specialGuest(true).guestName("Solomun").theme("Techno / Melodic")
-                .tableCapacity(20).active(true).build();
-        novaSpecial.getTags().add(technoTag);
-        novaSpecial.getTags().add(liveTag);
-        novaSpecial.getTags().add(dresscode);
-        nightRepository.save(novaSpecial);
-
-        // ── Skybar Rooftop ────────────────────────────────────────────────────
-        Address skybarAddress = Address.builder()
-                .street("Calea Dorobanților 5").city("Bucharest")
-                .postalCode("010551").country("Romania")
-                .latitude(44.4529).longitude(26.0934).build();
-
-        Venue skybar = Venue.builder()
-                .name("Skybar Rooftop").type(Venue.VenueType.ROOFTOP)
-                .description("12th floor rooftop bar with panoramic city views. " +
-                        "Cocktails, sunset sessions, and weekend DJ sets.")
-                .address(skybarAddress).owner(owner2)
-                .averageRating(4.4).totalRatings(156).verified(true).build();
-        venueRepository.save(skybar);
-
-        // Tonight at Skybar
-        Night skybarTonight = Night.builder()
-                .venue(skybar).title("Sunset Cocktails & Beats")
-                .description("Rooftop sunset with live DJ and signature cocktail menu.")
-                .date(LocalDate.now()).startTime(LocalTime.of(18, 0)).endTime(LocalTime.of(2, 0))
-                .specialGuest(false).theme("Rooftop Vibes")
-                .tableCapacity(60).active(true).build();
-        skybarTonight.getTags().add(rooftopTag);
-        nightRepository.save(skybarTonight);
-
-        log.info("Seeded {} venues and {} nights",
-                venueRepository.count(), nightRepository.count());
+        assertThatThrownBy(() -> rsvpService.createOrUpdateRsvp(nightId, userId,
+                CreateRsvpRequest.builder().status(Rsvp.RsvpStatus.GOING).build()))
+                .isInstanceOf(BusinessRuleException.class).hasMessageContaining("past");
+        then(rsvpRepository).should(never()).save(any());
     }
 
-    private Tag getOrCreateTag(String name) {
-        return tagRepository.findByNameIgnoreCase(name)
-                .orElseGet(() -> tagRepository.save(Tag.builder().name(name).build()));
+    @Test @DisplayName("createRsvp INTERESTED: saves without notification")
+    void createRsvp_interested_noNotification() {
+        given(nightRepository.findById(nightId)).willReturn(Optional.of(night));
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(rsvpRepository.findByUserIdAndNightId(userId, nightId)).willReturn(Optional.empty());
+        Rsvp saved = Rsvp.builder().user(user).night(night).status(Rsvp.RsvpStatus.INTERESTED).build();
+        given(rsvpRepository.save(any())).willReturn(saved);
+
+        rsvpService.createOrUpdateRsvp(nightId, userId,
+                CreateRsvpRequest.builder().status(Rsvp.RsvpStatus.INTERESTED).build());
+
+        then(notificationService).should(never()).sendRsvpConfirmation(any(), any());
+    }
+
+    @Test @DisplayName("createRsvp: updates existing RSVP instead of inserting duplicate")
+    void createRsvp_existingRsvp_updates() {
+        Rsvp existing = Rsvp.builder().user(user).night(night)
+                .status(Rsvp.RsvpStatus.INTERESTED).build();
+        given(nightRepository.findById(nightId)).willReturn(Optional.of(night));
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(rsvpRepository.findByUserIdAndNightId(userId, nightId))
+                .willReturn(Optional.of(existing));
+        given(rsvpRepository.save(any())).willReturn(existing);
+
+        rsvpService.createOrUpdateRsvp(nightId, userId,
+                CreateRsvpRequest.builder().status(Rsvp.RsvpStatus.GOING).build());
+
+        then(rsvpRepository).should(times(1)).save(any());
+        assertThat(existing.getStatus()).isEqualTo(Rsvp.RsvpStatus.GOING);
     }
 }

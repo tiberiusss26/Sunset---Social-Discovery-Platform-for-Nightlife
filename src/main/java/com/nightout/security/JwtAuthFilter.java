@@ -32,8 +32,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        log.info("TIBIBOSUFILTER HIT: {}", request.getServletPath());
-
         String path = request.getServletPath();
 
         if (path.startsWith("/api/auth") || path.startsWith("/actuator")) {
