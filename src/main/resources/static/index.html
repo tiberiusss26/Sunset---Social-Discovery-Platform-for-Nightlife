@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NightOut</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:        #0a0a0f;
+            --surface:   #13131a;
+            --surface2:  #1c1c27;
+            --border:    #2a2a3a;
+            --accent:    #e8c547;
+            --accent2:   #c97d3a;
+            --text:      #f0ede8;
+            --text2:     #9896a0;
+            --error:     #e85454;
+            --success:   #4ecb87;
+            --radius:    10px;
+            --font-head: 'DM Serif Display', Georgia, serif;
+            --font-body: 'DM Sans', system-ui, sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 15px;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* ── NAV ── */
+        nav {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(10,10,15,0.92);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center;
+            padding: 0 2rem; height: 60px; gap: 2rem;
+        }
+        .nav-logo {
+            font-family: var(--font-head);
+            font-size: 1.4rem; color: var(--accent);
+            letter-spacing: 0.02em; cursor: pointer;
+            flex-shrink: 0;
+        }
+        .nav-links { display: flex; gap: 0.25rem; flex: 1; }
+        .nav-btn {
+            background: none; border: none; color: var(--text2);
+            font-family: var(--font-body); font-size: 0.875rem;
+            font-weight: 500; padding: 0.4rem 0.9rem;
+            border-radius: 6px; cursor: pointer;
+            transition: color 0.15s, background 0.15s;
+        }
+        .nav-btn:hover { color: var(--text); background: var(--surface2); }
+        .nav-btn.active { color: var(--accent); background: rgba(232,197,71,0.1); }
+        .nav-right { display: flex; align-items: center; gap: 0.75rem; margin-left: auto; }
+        .nav-user {
+            font-size: 0.8rem; color: var(--text2);
+            background: var(--surface2); padding: 0.3rem 0.8rem;
+            border-radius: 20px; border: 1px solid var(--border);
+        }
+        .nav-user span { color: var(--accent); font-weight: 600; }
+
+        /* ── LAYOUT ── */
+        main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+        /* ── HERO ── */
+        .hero {
+            text-align: center; padding: 5rem 1rem 3rem;
+            background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(232,197,71,0.08) 0%, transparent 70%);
+        }
+        .hero h1 {
+            font-family: var(--font-head); font-size: clamp(2.5rem, 6vw, 4.5rem);
+            line-height: 1.1; margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .hero p { color: var(--text2); font-size: 1.1rem; max-width: 480px; margin: 0 auto 2rem; }
+        .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+        /* ── BUTTONS ── */
+        .btn {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            padding: 0.65rem 1.4rem; border-radius: var(--radius);
+            font-family: var(--font-body); font-size: 0.9rem; font-weight: 600;
+            cursor: pointer; border: none; transition: all 0.18s;
+            text-decoration: none;
+        }
+        .btn-primary { background: var(--accent); color: #0a0a0f; }
+        .btn-primary:hover { background: #f0d060; transform: translateY(-1px); }
+        .btn-secondary {
+            background: transparent; color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { background: var(--surface2); border-color: var(--text2); }
+        .btn-danger { background: var(--error); color: white; }
+        .btn-danger:hover { background: #ff6060; }
+        .btn-sm { padding: 0.4rem 0.9rem; font-size: 0.8rem; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 14px; overflow: hidden;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .card:hover { border-color: rgba(232,197,71,0.3); transform: translateY(-2px); }
+        .card-body { padding: 1.25rem 1.5rem; }
+        .card-footer {
+            padding: 0.875rem 1.5rem;
+            border-top: 1px solid var(--border);
+            background: var(--surface2);
+            display: flex; gap: 0.5rem; align-items: center;
+        }
+
+        /* ── GRID ── */
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 1.25rem; }
+
+        /* ── BADGE ── */
+        .badge {
+            display: inline-block; padding: 0.2rem 0.6rem;
+            border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+            letter-spacing: 0.04em; text-transform: uppercase;
+        }
+        .badge-gold { background: rgba(232,197,71,0.15); color: var(--accent); border: 1px solid rgba(232,197,71,0.3); }
+        .badge-green { background: rgba(78,203,135,0.12); color: var(--success); border: 1px solid rgba(78,203,135,0.3); }
+        .badge-gray { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+        .badge-orange { background: rgba(201,125,58,0.15); color: var(--accent2); border: 1px solid rgba(201,125,58,0.3); }
+
+        /* ── FORM ── */
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group label {
+            display: block; font-size: 0.82rem; font-weight: 600;
+            color: var(--text2); margin-bottom: 0.4rem;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .form-control {
+            width: 100%; padding: 0.7rem 1rem;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: var(--radius); color: var(--text);
+            font-family: var(--font-body); font-size: 0.95rem;
+            outline: none; transition: border-color 0.15s;
+        }
+        .form-control:focus { border-color: var(--accent); }
+        .form-control.error { border-color: var(--error); }
+        .form-control::placeholder { color: var(--text2); opacity: 0.6; }
+        select.form-control option { background: var(--surface2); }
+        .field-error {
+            font-size: 0.78rem; color: var(--error);
+            margin-top: 0.3rem; display: flex; align-items: center; gap: 0.3rem;
+        }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+        /* ── ALERT ── */
+        .alert {
+            padding: 0.875rem 1.1rem; border-radius: var(--radius);
+            margin-bottom: 1.25rem; font-size: 0.9rem;
+            display: flex; align-items: flex-start; gap: 0.6rem;
+        }
+        .alert-error { background: rgba(232,84,84,0.1); border: 1px solid rgba(232,84,84,0.3); color: #ff8080; }
+        .alert-success { background: rgba(78,203,135,0.1); border: 1px solid rgba(78,203,135,0.3); color: var(--success); }
+
+        /* ── MODAL ── */
+        .overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(4px); z-index: 200;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+            animation: fadeIn 0.15s ease;
+        }
+        .modal {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; width: 100%; max-width: 520px;
+            max-height: 90vh; overflow-y: auto;
+            animation: slideUp 0.2s ease;
+        }
+        .modal-header {
+            padding: 1.5rem 1.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .modal-header h2 { font-family: var(--font-head); font-size: 1.4rem; }
+        .modal-close {
+            background: none; border: none; color: var(--text2);
+            font-size: 1.4rem; cursor: pointer; line-height: 1;
+            padding: 0.2rem 0.4rem; border-radius: 4px;
+            transition: color 0.15s;
+        }
+        .modal-close:hover { color: var(--text); }
+        .modal-body { padding: 1.5rem 1.75rem; }
+        .modal-footer {
+            padding: 1rem 1.75rem 1.5rem;
+            display: flex; gap: 0.75rem; justify-content: flex-end;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* ── PAGE SECTIONS ── */
+        .page-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;
+        }
+        .page-title { font-family: var(--font-head); font-size: 1.8rem; }
+        .page-subtitle { color: var(--text2); font-size: 0.9rem; margin-top: 0.2rem; }
+
+        /* ── RATING STARS ── */
+        .stars { display: flex; gap: 3px; }
+        .star { font-size: 1.1rem; cursor: pointer; transition: transform 0.1s; }
+        .star:hover { transform: scale(1.2); }
+        .star.filled { color: var(--accent); }
+        .star.empty { color: var(--border); }
+
+        /* ── VENUE CARD ── */
+        .venue-rating { display: flex; align-items: center; gap: 0.4rem; margin: 0.4rem 0; }
+        .venue-rating-num { font-size: 0.85rem; color: var(--text2); }
+        .venue-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+        .venue-name { font-family: var(--font-head); font-size: 1.15rem; margin-bottom: 0.2rem; }
+        .venue-city { color: var(--text2); font-size: 0.85rem; }
+
+        /* ── NIGHT CARD ── */
+        .night-title { font-family: var(--font-head); font-size: 1.1rem; margin-bottom: 0.25rem; }
+        .night-venue { color: var(--text2); font-size: 0.85rem; margin-bottom: 0.5rem; }
+        .night-time { font-size: 0.85rem; color: var(--accent); font-weight: 600; }
+        .night-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.6rem; }
+        .night-tag {
+            font-size: 0.72rem; padding: 0.15rem 0.55rem;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 20px; color: var(--text2);
+        }
+
+        /* ── PAGINATION ── */
+        .pagination { display: flex; gap: 0.4rem; justify-content: center; margin-top: 2rem; }
+        .page-num {
+            width: 36px; height: 36px; border-radius: 8px;
+            background: var(--surface); border: 1px solid var(--border);
+            color: var(--text2); font-size: 0.85rem;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .page-num:hover { border-color: var(--accent); color: var(--accent); }
+        .page-num.active { background: var(--accent); color: #0a0a0f; border-color: var(--accent); font-weight: 700; }
+
+        /* ── EMPTY STATE ── */
+        .empty {
+            text-align: center; padding: 4rem 2rem;
+            color: var(--text2);
+        }
+        .empty-icon { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+        .empty h3 { font-family: var(--font-head); font-size: 1.4rem; color: var(--text); margin-bottom: 0.5rem; }
+
+        /* ── ERROR PAGES ── */
+        .error-page {
+            min-height: 70vh; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center;
+        }
+        .error-code {
+            font-family: var(--font-head);
+            font-size: clamp(6rem, 15vw, 10rem);
+            line-height: 1; color: var(--accent); opacity: 0.15;
+            margin-bottom: -1rem;
+        }
+        .error-title { font-family: var(--font-head); font-size: 2rem; margin-bottom: 0.75rem; }
+        .error-desc { color: var(--text2); max-width: 380px; margin-bottom: 2rem; }
+
+        /* ── LOADING ── */
+        .spinner {
+            width: 36px; height: 36px; border-radius: 50%;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            animation: spin 0.8s linear infinite;
+            margin: 3rem auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── TABS ── */
+        .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 1.75rem; }
+        .tab {
+            padding: 0.7rem 1.2rem; background: none; border: none;
+            color: var(--text2); font-family: var(--font-body);
+            font-size: 0.9rem; font-weight: 500; cursor: pointer;
+            border-bottom: 2px solid transparent; margin-bottom: -1px;
+            transition: all 0.15s;
+        }
+        .tab:hover { color: var(--text); }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        /* ── SEARCH ── */
+        .search-bar {
+            display: flex; gap: 0.75rem; margin-bottom: 1.75rem;
+        }
+        .search-bar .form-control { flex: 1; }
+
+        /* ── DETAIL VIEW ── */
+        .detail-hero {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; padding: 2rem; margin-bottom: 1.5rem;
+            position: relative; overflow: hidden;
+        }
+        .detail-hero::before {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(ellipse 70% 60% at 100% 0%, rgba(232,197,71,0.06) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .detail-title { font-family: var(--font-head); font-size: 2rem; margin-bottom: 0.5rem; }
+        .detail-meta { display: flex; gap: 1rem; flex-wrap: wrap; color: var(--text2); font-size: 0.9rem; }
+
+        /* ── TOAST ── */
+        .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 500; display: flex; flex-direction: column; gap: 0.5rem; }
+        .toast {
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 10px; padding: 0.875rem 1.25rem;
+            font-size: 0.875rem; max-width: 320px;
+            animation: toastIn 0.25s ease;
+            display: flex; align-items: center; gap: 0.6rem;
+        }
+        .toast-success { border-left: 3px solid var(--success); }
+        .toast-error   { border-left: 3px solid var(--error); }
+        @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+        .text-sm { font-size: 0.85rem; color: var(--text2); }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .gap-1 { gap: 0.5rem; }
+        .mt-1 { margin-top: 0.5rem; }
+        .mb-1 { margin-bottom: 0.75rem; }
+        .fw-600 { font-weight: 600; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+
+<script type="text/babel">
+    const { useState, useEffect, useCallback, useRef, createContext, useContext } = React;
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // CONFIG
+    // ─────────────────────────────────────────────────────────────────────────────
+    const API = 'http://localhost:8080';
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // AUTH CONTEXT
+    // ─────────────────────────────────────────────────────────────────────────────
+    const AuthCtx = createContext(null);
+
+    function useAuth() { return useContext(AuthCtx); }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // API HELPER
+    // ─────────────────────────────────────────────────────────────────────────────
+    async function apiFetch(path, options = {}, token = null) {
+        const headers = { 'Content-Type': 'application/json', ...options.headers };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch(`${API}${path}`, { ...options, headers });
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch { data = text; }
+        if (!res.ok) throw { status: res.status, data };
+        return data;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // TOAST
+    // ─────────────────────────────────────────────────────────────────────────────
+    function ToastContainer({ toasts }) {
+        return (
+            <div className="toast-container">
+                {toasts.map(t => (
+                    <div key={t.id} className={`toast toast-${t.type}`}>
+                        <span>{t.type === 'success' ? '✓' : '✕'}</span>
+                        {t.message}
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // VALIDATION HELPERS
+    // ─────────────────────────────────────────────────────────────────────────────
+    function validate(fields, values) {
+        const errors = {};
+        fields.forEach(f => {
+            const v = (values[f.name] || '').toString().trim();
+            if (f.required && !v) { errors[f.name] = `${f.label} is required`; return; }
+            if (f.minLen && v.length < f.minLen) { errors[f.name] = `${f.label} must be at least ${f.minLen} characters`; return; }
+            if (f.maxLen && v.length > f.maxLen) { errors[f.name] = `${f.label} must be at most ${f.maxLen} characters`; return; }
+            if (f.email && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { errors[f.name] = 'Enter a valid email address'; return; }
+            if (f.pattern && v && !f.pattern.test(v)) { errors[f.name] = f.patternMsg || 'Invalid format'; return; }
+            if (f.min !== undefined && Number(v) < f.min) { errors[f.name] = `Minimum is ${f.min}`; return; }
+            if (f.max !== undefined && Number(v) > f.max) { errors[f.name] = `Maximum is ${f.max}`; return; }
+        });
+        return errors;
+    }
+
+    function FieldError({ msg }) {
+        if (!msg) return null;
+        return <div className="field-error">⚠ {msg}</div>;
+    }
+
+    function FormInput({ label, name, type='text', value, onChange, error, placeholder, required, ...rest }) {
+        return (
+            <div className="form-group">
+                <label>{label}{required && <span style={{color:'var(--error)'}}> *</span>}</label>
+                <input
+                    className={`form-control${error ? ' error' : ''}`}
+                    type={type} name={name} value={value}
+                    onChange={e => onChange(name, e.target.value)}
+                    placeholder={placeholder} {...rest}
+                />
+                <FieldError msg={error} />
+            </div>
+        );
+    }
+
+    function FormSelect({ label, name, value, onChange, error, options, required }) {
+        return (
+            <div className="form-group">
+                <label>{label}{required && <span style={{color:'var(--error)'}}> *</span>}</label>
+                <select className={`form-control${error ? ' error' : ''}`} name={name} value={value} onChange={e => onChange(name, e.target.value)}>
+                    <option value="">Select...</option>
+                    {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <FieldError msg={error} />
+            </div>
+        );
+    }
+
+    function FormTextarea({ label, name, value, onChange, error, placeholder, rows=3 }) {
+        return (
+            <div className="form-group">
+                <label>{label}</label>
+                <textarea
+                    className={`form-control${error ? ' error' : ''}`}
+                    name={name} value={value} rows={rows}
+                    onChange={e => onChange(name, e.target.value)}
+                    placeholder={placeholder}
+                    style={{resize:'vertical'}}
+                />
+                <FieldError msg={error} />
+            </div>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // STARS COMPONENT
+    // ─────────────────────────────────────────────────────────────────────────────
+    function Stars({ value, onChange, readOnly }) {
+        const [hover, setHover] = useState(0);
+        return (
+            <div className="stars">
+                {[1,2,3,4,5].map(i => (
+                    <span
+                        key={i}
+                        className={`star ${i <= (hover || value) ? 'filled' : 'empty'}`}
+                        style={readOnly ? {cursor:'default'} : {}}
+                        onMouseEnter={() => !readOnly && setHover(i)}
+                        onMouseLeave={() => !readOnly && setHover(0)}
+                        onClick={() => !readOnly && onChange && onChange(i)}
+                    >★</span>
+                ))}
+            </div>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // MODAL WRAPPER
+    // ─────────────────────────────────────────────────────────────────────────────
+    function Modal({ title, onClose, children, footer }) {
+        useEffect(() => {
+            const handler = e => { if (e.key === 'Escape') onClose(); };
+            window.addEventListener('keydown', handler);
+            return () => window.removeEventListener('keydown', handler);
+        }, [onClose]);
+        return (
+            <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+                <div className="modal">
+                    <div className="modal-header">
+                        <h2>{title}</h2>
+                        <button className="modal-close" onClick={onClose}>×</button>
+                    </div>
+                    <div className="modal-body">{children}</div>
+                    {footer && <div className="modal-footer">{footer}</div>}
+                </div>
+            </div>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // AUTH FORMS
+    // ─────────────────────────────────────────────────────────────────────────────
+    function AuthPage({ onAuth }) {
+        const [tab, setTab] = useState('login');
+        const [form, setForm] = useState({ username:'', email:'', password:'' });
+        const [errors, setErrors] = useState({});
+        const [apiError, setApiError] = useState('');
+        const [loading, setLoading] = useState(false);
+
+        const set = (name, value) => {
+            setForm(f => ({ ...f, [name]: value }));
+            setErrors(e => ({ ...e, [name]: '' }));
+            setApiError('');
+        };
+
+        const loginFields = [
+            { name:'email', label:'Email', required:true, email:true },
+            { name:'password', label:'Password', required:true, minLen:8 },
+        ];
+        const registerFields = [
+            { name:'username', label:'Username', required:true, minLen:3, maxLen:50,
+                pattern:/^[a-zA-Z0-9_]+$/, patternMsg:'Only letters, numbers and underscores' },
+            { name:'email', label:'Email', required:true, email:true },
+            { name:'password', label:'Password', required:true, minLen:8 },
+        ];
+
+        const submit = async () => {
+            const fields = tab === 'login' ? loginFields : registerFields;
+            const errs = validate(fields, form);
+            if (Object.keys(errs).length) { setErrors(errs); return; }
+            setLoading(true);
+            try {
+                const data = await apiFetch(`/api/auth/${tab}`, {
+                    method: 'POST',
+                    body: JSON.stringify(tab === 'login'
+                        ? { email: form.email, password: form.password }
+                        : form)
+                });
+                onAuth(data);
+            } catch(e) {
+                setApiError(e.data?.message || e.data?.fieldErrors
+                    ? Object.values(e.data.fieldErrors).join(', ')
+                    : 'Something went wrong. Please try again.');
+            } finally { setLoading(false); }
+        };
+
+        return (
+            <div style={{minHeight:'80vh', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                <div style={{width:'100%', maxWidth:'420px'}}>
+                    <div style={{textAlign:'center', marginBottom:'2rem'}}>
+                        <div style={{fontFamily:'var(--font-head)', fontSize:'2rem', color:'var(--accent)', marginBottom:'0.5rem'}}>NightOut</div>
+                        <p style={{color:'var(--text2)'}}>Discover your city's nightlife</p>
+                    </div>
+                    <div className="card">
+                        <div className="modal-body">
+                            <div className="tabs" style={{marginBottom:'1.5rem'}}>
+                                <button className={`tab${tab==='login'?' active':''}`} onClick={() => { setTab('login'); setErrors({}); setApiError(''); }}>Login</button>
+                                <button className={`tab${tab==='register'?' active':''}`} onClick={() => { setTab('register'); setErrors({}); setApiError(''); }}>Register</button>
+                            </div>
+                            {apiError && <div className="alert alert-error">⚠ {apiError}</div>}
+                            {tab === 'login' ? (
+                                <>
+                                    <FormInput label="Email" name="email" type="email" value={form.email} onChange={set} error={errors.email} placeholder="you@example.com" required />
+                                    <FormInput label="Password" name="password" type="password" value={form.password} onChange={set} error={errors.password} placeholder="••••••••" required />
+                                </>
+                            ) : (
+                                <>
+                                    <FormInput label="Username" name="username" value={form.username} onChange={set} error={errors.username} placeholder="john_doe" required />
+                                    <FormInput label="Email" name="email" type="email" value={form.email} onChange={set} error={errors.email} placeholder="you@example.com" required />
+                                    <FormInput label="Password" name="password" type="password" value={form.password} onChange={set} error={errors.password} placeholder="Min 8 characters" required />
+                                </>
+                            )}
+                            <button className="btn btn-primary" style={{width:'100%', justifyContent:'center', marginTop:'0.5rem'}} onClick={submit} disabled={loading}>
+                                {loading ? '...' : tab === 'login' ? 'Sign In' : 'Create Account'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // VENUES PAGE
+    // ─────────────────────────────────────────────────────────────────────────────
+    function VenuesPage({ showToast }) {
+        const { token, user } = useAuth();
+        const [venues, setVenues] = useState([]);
+        const [page, setPage] = useState(0);
+        const [totalPages, setTotalPages] = useState(0);
+        const [loading, setLoading] = useState(true);
+        const [search, setSearch] = useState('');
+        const [showCreate, setShowCreate] = useState(false);
+        const [editVenue, setEditVenue] = useState(null);
+        const [rateVenue, setRateVenue] = useState(null);
+        const isOwnerOrAdmin = user?.roles?.some(r => r === 'ROLE_VENUE_OWNER' || r === 'ROLE_ADMIN');
+
+        const load = useCallback(async (p = 0, q = '') => {
+            setLoading(true);
+            try {
+                const path = q
+                    ? `/api/venues/search?q=${encodeURIComponent(q)}&page=${p}&size=12`
+                    : `/api/venues?page=${p}&size=12&sort=averageRating,desc`;
+                const data = await apiFetch(path, {}, token);
+                setVenues(data.content || []);
+                setTotalPages(data.totalPages || 0);
+                setPage(p);
+            } catch { showToast('Failed to load venues', 'error'); }
+            finally { setLoading(false); }
+        }, [token]);
+
+        useEffect(() => { load(0, search); }, []);
+
+        const handleSearch = () => load(0, search);
+
+        const handleDelete = async (id) => {
+            if (!confirm('Delete this venue? All its nights will also be deleted.')) return;
+            try {
+                await apiFetch(`/api/venues/${id}`, { method:'DELETE' }, token);
+                showToast('Venue deleted', 'success');
+                load(page, search);
+            } catch(e) { showToast(e.data?.message || 'Delete failed', 'error'); }
+        };
+
+        return (
+            <div>
+                <div className="page-header">
+                    <div>
+                        <h1 className="page-title">Venues</h1>
+                        <p className="page-subtitle">Discover bars, clubs and lounges near you</p>
+                    </div>
+                    {isOwnerOrAdmin && (
+                        <button className="btn btn-primary" onClick={() => setShowCreate(true)}>+ Add Venue</button>
+                    )}
+                </div>
+
+                <div className="search-bar">
+                    <input className="form-control" placeholder="Search venues..." value={search}
+                           onChange={e => setSearch(e.target.value)}
+                           onKeyDown={e => e.key === 'Enter' && handleSearch()} />
+                    <button className="btn btn-secondary" onClick={handleSearch}>Search</button>
+                    {search && <button className="btn btn-secondary" onClick={() => { setSearch(''); load(0, ''); }}>Clear</button>}
+                </div>
+
+                {loading ? <div className="spinner" /> : venues.length === 0 ? (
+                    <div className="empty">
+                        <div className="empty-icon">🏙</div>
+                        <h3>No venues found</h3>
+                        <p>Try a different search or add a new venue</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="grid-3">
+                            {venues.map(v => (
+                                <div key={v.id} className="card">
+                                    <div className="card-body">
+                                        <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'0.5rem'}}>
+                                            <div>
+                                                <div className="venue-name">{v.name}</div>
+                                                <div className="venue-city">📍 {v.city}</div>
+                                            </div>
+                                            {v.verified && <span className="badge badge-green">✓ Verified</span>}
+                                        </div>
+                                        <div className="venue-rating">
+                                            <Stars value={Math.round(v.averageRating)} readOnly />
+                                            <span className="venue-rating-num">{v.averageRating?.toFixed(1)} ({v.totalRatings})</span>
+                                        </div>
+                                        <div className="venue-meta">
+                                            <span className="badge badge-gray">{v.type}</span>
+                                            {v.rsvpCountTonight > 0 && <span className="badge badge-orange">🔥 {v.rsvpCountTonight} going tonight</span>}
+                                        </div>
+                                    </div>
+                                    <div className="card-footer">
+                                        <button className="btn btn-secondary btn-sm" onClick={() => setRateVenue(v)}>★ Rate</button>
+                                        {isOwnerOrAdmin && <>
+                                            <button className="btn btn-secondary btn-sm" onClick={() => setEditVenue(v)}>Edit</button>
+                                            <button className="btn btn-danger btn-sm" onClick={() => handleDelete(v.id)}>Delete</button>
+                                        </>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        {totalPages > 1 && (
+                            <div className="pagination">
+                                {Array.from({length: totalPages}, (_, i) => (
+                                    <div key={i} className={`page-num${i===page?' active':''}`} onClick={() => load(i, search)}>{i+1}</div>
+                                ))}
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {showCreate && <VenueModal onClose={() => setShowCreate(false)} onSaved={() => { setShowCreate(false); load(page, search); }} showToast={showToast} />}
+                {editVenue && <VenueModal venue={editVenue} onClose={() => setEditVenue(null)} onSaved={() => { setEditVenue(null); load(page, search); }} showToast={showToast} />}
+                {rateVenue && <RateModal venue={rateVenue} onClose={() => setRateVenue(null)} onSaved={() => { setRateVenue(null); load(page, search); }} showToast={showToast} />}
+            </div>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // VENUE MODAL (Create / Edit)
+    // ─────────────────────────────────────────────────────────────────────────────
+    function VenueModal({ venue, onClose, onSaved, showToast }) {
+        const { token } = useAuth();
+        const isEdit = !!venue;
+        const [form, setForm] = useState({
+            name: venue?.name || '', type: venue?.type || '',
+            description: venue?.description || '', coverImageUrl: venue?.coverImageUrl || '',
+            street: venue?.address?.street || '', city: venue?.address?.city || '',
+            postalCode: venue?.address?.postalCode || '', country: venue?.address?.country || '',
+            latitude: venue?.address?.latitude || '', longitude: venue?.address?.longitude || '',
+        });
+        const [errors, setErrors] = useState({});
+        const [apiError, setApiError] = useState('');
+        const [loading, setLoading] = useState(false);
+
+        const set = (name, value) => { setForm(f => ({...f, [name]: value})); setErrors(e => ({...e, [name]: ''})); };
+
+        const fields = [
+            { name:'name', label:'Venue Name', required:true, maxLen:100 },
+            { name:'type', label:'Type', required:true },
+            { name:'street', label:'Street', required:true },
+            { name:'city', label:'City', required:true },
+        ];
+
+        const submit = async () => {
+            const errs = validate(fields, form);
+            if (Object.keys(errs).length) { setErrors(errs); return; }
+            setLoading(true);
+            setApiError('');
+            try {
+                const body = {
+                    name: form.name, type: form.type,
+                    description: form.description, coverImageUrl: form.coverImageUrl,
+                    address: { street: form.street, city: form.city, postalCode: form.postalCode, country: form.country,
+                        latitude: form.latitude ? Number(form.latitude) : null,
+                        longitude: form.longitude ? Number(form.longitude) : null }
+                };
+                if (isEdit) {
+                    await apiFetch(`/api/venues/${venue.id}`, { method:'PUT', body: JSON.stringify(body) }, token);
+                    showToast('Venue updated', 'success');
+                } else {
+                    await apiFetch('/api/venues', { method:'POST', body: JSON.stringify(body) }, token);
+                    showToast('Venue created', 'success');
+                }
+                onSaved();
+            } catch(e) {
+                const msg = e.data?.fieldErrors ? Object.entries(e.data.fieldErrors).map(([k,v]) => `${k}: ${v}`).join(', ') : e.data?.message || 'Save failed';
+                setApiError(msg);
+            } finally { setLoading(false); }
+        };
+
+        return (
+            <Modal title={isEdit ? 'Edit Venue' : 'Add New Venue'} onClose={onClose}
+                   footer={<>
+                       <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+                       <button className="btn btn-primary" onClick={submit} disabled={loading}>{loading ? 'Saving...' : 'Save Venue'}</button>
+                   </>}>
+                {apiError && <div className="alert alert-error">⚠ {apiError}</div>}
+                <FormInput label="Venue Name" name="name" value={form.name} onChange={set} error={errors.name} placeholder="Club Nova" required />
+                <FormSelect label="Type" name="type" value={form.type} onChange={set} error={errors.type} required
+                            options={['BAR','CLUB','RESTAURANT','LOUNGE','ROOFTOP','OTHER'].map(t => ({value:t, label:t}))} />
+                <FormTextarea label="Description" name="description" value={form.description} onChange={set} placeholder="Tell people what makes this place special..." />
+                <div className="divider" />
+                <div style={{fontSize:'0.8rem', color:'var(--text2)', marginBottom:'1rem', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:600}}>Address</div>
+                <FormInput label="Street" name="street" value={form.street} onChange={set} error={errors.street} placeholder="Strada Victoriei 10" required />
+                <div className="form-row">
+                    <FormInput label="City" name="city" value={form.city} onChange={set} error={errors.city} placeholder="Bucharest" required />
+                    <FormInput label="Country" name="country" value={form.country} onChange={set} placeholder="Romania" />
+                </div>
+                <div className="form-row">
+                    <FormInput label="Latitude" name="latitude" type="number" value={form.latitude} onChange={set} placeholder="44.4396" />
+                    <FormInput label="Longitude" name="longitude" type="number" value={form.longitude} onChange={set} placeholder="26.0963" />
+                </div>
+            </Modal>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // RATE MODAL
+    // ─────────────────────────────────────────────────────────────────────────────
+    function RateModal({ venue, onClose, onSaved, showToast }) {
+        const { token } = useAuth();
+        const [score, setScore] = useState(0);
+        const [comment, setComment] = useState('');
+        const [error, setError] = useState('');
+        const [loading, setLoading] = useState(false);
+
+        const submit = async () => {
+            if (!score) { setError('Please select a star rating'); return; }
+            setLoading(true);
+            try {
+                await apiFetch(`/api/venues/${venue.id}/ratings`, {
+                    method: 'POST', body: JSON.stringify({ score, comment })
+                }, token);
+                showToast('Rating submitted!', 'success');
+                onSaved();
+            } catch(e) { setError(e.data?.message || 'Failed to submit rating'); }
+            finally { setLoading(false); }
+        };
+
+        return (
+            <Modal title={`Rate ${venue.name}`} onClose={onClose}
+                   footer={<>
+                       <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+                       <button className="btn btn-primary" onClick={submit} disabled={loading}>{loading ? '...' : 'Submit Rating'}</button>
+                   </>}>
+                {error && <div className="alert alert-error">⚠ {error}</div>}
+                <div className="form-group">
+                    <label>Your Rating <span style={{color:'var(--error)'}}>*</span></label>
+                    <Stars value={score} onChange={s => { setScore(s); setError(''); }} />
+                    {!score && <FieldError msg={error} />}
+                </div>
+                <FormTextarea label="Comment (optional)" name="comment" value={comment} onChange={(_, v) => setComment(v)} placeholder="What did you think?" rows={3} />
+            </Modal>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // NIGHTS PAGE
+    // ─────────────────────────────────────────────────────────────────────────────
+    function NightsPage({ showToast }) {
+        const { token, user } = useAuth();
+        const [tab, setTab] = useState('tonight');
+        const [nights, setNights] = useState([]);
+        const [page, setPage] = useState(0);
+        const [totalPages, setTotalPages] = useState(0);
+        const [loading, setLoading] = useState(true);
+        const [showCreate, setShowCreate] = useState(false);
+        const [rsvpNight, setRsvpNight] = useState(null);
+        const isOwnerOrAdmin = user?.roles?.some(r => r === 'ROLE_VENUE_OWNER' || r === 'ROLE_ADMIN');
+
+        const load = useCallback(async (t, p = 0) => {
+            setLoading(true);
+            try {
+                let path;
+                if (t === 'tonight') path = `/api/nights/tonight?page=${p}&size=12`;
+                else if (t === 'friends') path = `/api/nights/friends-feed`;
+                else path = `/api/nights/my-plans`;
+                const data = await apiFetch(path, {}, token);
+                if (Array.isArray(data)) { setNights(data); setTotalPages(0); }
+                else { setNights(data.content || []); setTotalPages(data.totalPages || 0); setPage(p); }
+            } catch { showToast('Failed to load nights', 'error'); }
+            finally { setLoading(false); }
+        }, [token]);
+
+        useEffect(() => { load(tab); }, [tab]);
+
+        const handleDelete = async (id) => {
+            if (!confirm('Delete this night?')) return;
+            try {
+                await apiFetch(`/api/nights/${id}`, { method:'DELETE' }, token);
+                showToast('Night deleted', 'success');
+                load(tab);
+            } catch(e) { showToast(e.data?.message || 'Delete failed', 'error'); }
+        };
+
+        const today = new Date().toISOString().split('T')[0];
+
+        return (
+            <div>
+                <div className="page-header">
+                    <div>
+                        <h1 className="page-title">Nights</h1>
+                        <p className="page-subtitle">What's happening tonight and beyond</p>
+                    </div>
+                    {isOwnerOrAdmin && <button className="btn btn-primary" onClick={() => setShowCreate(true)}>+ Post Night</button>}
+                </div>
+                <div className="tabs">
+                    <button className={`tab${tab==='tonight'?' active':''}`} onClick={() => setTab('tonight')}>🌙 Tonight</button>
+                    {token && <button className={`tab${tab==='friends'?' active':''}`} onClick={() => setTab('friends')}>👥 Friends' Plans</button>}
+                    {token && <button className={`tab${tab==='myplans'?' active':''}`} onClick={() => setTab('myplans')}>📅 My Plans</button>}
+                </div>
+
+                {loading ? <div className="spinner" /> : nights.length === 0 ? (
+                    <div className="empty">
+                        <div className="empty-icon">🌆</div>
+                        <h3>{tab === 'friends' ? 'No plans from friends yet' : tab === 'myplans' ? "You haven't RSVP'd to anything yet" : 'Nothing scheduled tonight'}</h3>
+                        <p>{tab === 'tonight' ? 'Check back later or follow venues to get notified' : 'Follow people and see where they\'re going'}</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="grid-3">
+                            {nights.map(n => (
+                                <div key={n.id} className="card">
+                                    <div className="card-body">
+                                        {n.specialGuest && <span className="badge badge-gold" style={{marginBottom:'0.5rem', display:'inline-block'}}>★ Special Guest: {n.guestName}</span>}
+                                        <div className="night-title">{n.title}</div>
+                                        <div className="night-venue">📍 {n.venueName}</div>
+                                        <div className="night-time">
+                                            {n.date} · {n.startTime?.substring(0,5)}
+                                            {n.theme && <span style={{color:'var(--text2)', fontWeight:400}}> · {n.theme}</span>}
+                                        </div>
+                                        {n.friendsGoingCount > 0 && <div style={{marginTop:'0.4rem', fontSize:'0.82rem', color:'var(--success)'}}>👥 {n.friendsGoingCount} friend{n.friendsGoingCount>1?'s':''} going</div>}
+                                        {n.rsvpCount > 0 && <div style={{marginTop:'0.2rem', fontSize:'0.82rem', color:'var(--text2)'}}>🎫 {n.rsvpCount} attending</div>}
+                                        {n.tags?.length > 0 && <div className="night-tags">{n.tags.map(t => <span key={t} className="night-tag">{t}</span>)}</div>}
+                                    </div>
+                                    <div className="card-footer">
+                                        {token && n.date >= today && <button className="btn btn-primary btn-sm" onClick={() => setRsvpNight(n)}>RSVP</button>}
+                                        {isOwnerOrAdmin && <button className="btn btn-danger btn-sm" onClick={() => handleDelete(n.id)}>Delete</button>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        {totalPages > 1 && (
+                            <div className="pagination">
+                                {Array.from({length: totalPages}, (_, i) => (
+                                    <div key={i} className={`page-num${i===page?' active':''}`} onClick={() => load(tab, i)}>{i+1}</div>
+                                ))}
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {showCreate && <NightModal onClose={() => setShowCreate(false)} onSaved={() => { setShowCreate(false); load(tab); }} showToast={showToast} />}
+                {rsvpNight && <RsvpModal night={rsvpNight} onClose={() => setRsvpNight(null)} onSaved={() => { setRsvpNight(null); showToast('RSVP confirmed! 🎉', 'success'); load(tab); }} showToast={showToast} />}
+            </div>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // NIGHT MODAL (Create)
+    // ─────────────────────────────────────────────────────────────────────────────
+    function NightModal({ onClose, onSaved, showToast }) {
+        const { token } = useAuth();
+        const [venues, setVenues] = useState([]);
+        const [form, setForm] = useState({
+            venueId:'', title:'', description:'', date:'', startTime:'',
+            endTime:'', specialGuest:false, guestName:'', theme:'',
+            tableCapacity:'', tags:'',
+        });
+        const [errors, setErrors] = useState({});
+        const [apiError, setApiError] = useState('');
+        const [loading, setLoading] = useState(false);
+
+        useEffect(() => {
+            apiFetch('/api/venues?page=0&size=50', {}, token)
+                .then(d => setVenues(d.content || []))
+                .catch(() => {});
+        }, []);
+
+        const set = (name, value) => { setForm(f => ({...f, [name]: value})); setErrors(e => ({...e, [name]: ''})); };
+
+        const fields = [
+            { name:'venueId', label:'Venue', required:true },
+            { name:'title', label:'Title', required:true, maxLen:100 },
+            { name:'date', label:'Date', required:true },
+            { name:'startTime', label:'Start Time', required:true },
+        ];
+
+        const today = new Date().toISOString().split('T')[0];
+
+        const submit = async () => {
+            const errs = validate(fields, form);
+            if (form.date && form.date < today) errs.date = 'Date cannot be in the past';
+            if (Object.keys(errs).length) { setErrors(errs); return; }
+            setLoading(true); setApiError('');
+            try {
+                const body = {
+                    title: form.title, description: form.description,
+                    date: form.date, startTime: form.startTime,
+                    endTime: form.endTime || null,
+                    specialGuest: form.specialGuest, guestName: form.guestName,
+                    theme: form.theme,
+                    tableCapacity: form.tableCapacity ? Number(form.tableCapacity) : null,
+                    tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+                };
+                await apiFetch(`/api/venues/${form.venueId}/nights`, { method:'POST', body: JSON.stringify(body) }, token);
+                showToast('Night posted!', 'success');
+                onSaved();
+            } catch(e) {
+                const msg = e.data?.fieldErrors ? Object.entries(e.data.fieldErrors).map(([k,v]) => `${k}: ${v}`).join(', ') : e.data?.message || 'Failed to post night';
+                setApiError(msg);
+            } finally { setLoading(false); }
+        };
+
+        return (
+            <Modal title="Post a Night" onClose={onClose}
+                   footer={<>
+                       <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+                       <button className="btn btn-primary" onClick={submit} disabled={loading}>{loading ? 'Posting...' : 'Post Night'}</button>
+                   </>}>
+                {apiError && <div className="alert alert-error">⚠ {apiError}</div>}
+                <FormSelect label="Venue" name="venueId" value={form.venueId} onChange={set} error={errors.venueId} required
+                            options={venues.map(v => ({value:v.id, label:v.name}))} />
+                <FormInput label="Night Title" name="title" value={form.title} onChange={set} error={errors.title} placeholder="House Music Friday" required />
+                <div className="form-row">
+                    <FormInput label="Date" name="date" type="date" value={form.date} onChange={set} error={errors.date} required />
+                    <FormInput label="Start Time" name="startTime" type="time" value={form.startTime} onChange={set} error={errors.startTime} required />
+                </div>
+                <div className="form-row">
+                    <FormInput label="End Time" name="endTime" type="time" value={form.endTime} onChange={set} />
+                    <FormInput label="Theme" name="theme" value={form.theme} onChange={set} placeholder="Underground House" />
+                </div>
+                <FormTextarea label="Description" name="description" value={form.description} onChange={set} placeholder="Tell people what to expect..." />
+                <div className="form-row">
+                    <div className="form-group">
+                        <label>Special Guest?</label>
+                        <div style={{display:'flex', alignItems:'center', gap:'0.5rem', marginTop:'0.4rem'}}>
+                            <input type="checkbox" id="sg" checked={form.specialGuest} onChange={e => set('specialGuest', e.target.checked)} style={{width:'16px', height:'16px', accentColor:'var(--accent)'}} />
+                            <label htmlFor="sg" style={{textTransform:'none', letterSpacing:'0', fontWeight:'400', color:'var(--text)'}}>Yes, there's a special guest</label>
+                        </div>
+                    </div>
+                    {form.specialGuest && <FormInput label="Guest Name" name="guestName" value={form.guestName} onChange={set} placeholder="DJ Solomun" />}
+                </div>
+                <div className="form-row">
+                    <FormInput label="Table Capacity" name="tableCapacity" type="number" value={form.tableCapacity} onChange={set} placeholder="40" />
+                    <FormInput label="Tags (comma separated)" name="tags" value={form.tags} onChange={set} placeholder="house music, dress code" />
+                </div>
+            </Modal>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // RSVP MODAL
+    // ─────────────────────────────────────────────────────────────────────────────
+    function RsvpModal({ night, onClose, onSaved, showToast }) {
+        const { token } = useAuth();
+        const [status, setStatus] = useState('GOING');
+        const [tableSize, setTableSize] = useState('');
+        const [errors, setErrors] = useState({});
+        const [loading, setLoading] = useState(false);
+
+        const submit = async () => {
+            const errs = {};
+            if (tableSize && (Number(tableSize) < 1 || Number(tableSize) > 20)) errs.tableSize = 'Table size must be between 1 and 20';
+            if (Object.keys(errs).length) { setErrors(errs); return; }
+            setLoading(true);
+            try {
+                await apiFetch(`/api/nights/${night.id}/rsvps`, {
+                    method: 'POST',
+                    body: JSON.stringify({ status, tableSize: tableSize ? Number(tableSize) : null })
+                }, token);
+                onSaved();
+            } catch(e) { showToast(e.data?.message || 'RSVP failed', 'error'); onClose(); }
+            finally { setLoading(false); }
+        };
+
+        return (
+            <Modal title={`RSVP — ${night.title}`} onClose={onClose}
+                   footer={<>
+                       <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+                       <button className="btn btn-primary" onClick={submit} disabled={loading}>{loading ? '...' : 'Confirm RSVP'}</button>
+                   </>}>
+                <div style={{marginBottom:'1.25rem', background:'var(--surface2)', borderRadius:'10px', padding:'1rem'}}>
+                    <div style={{fontWeight:600}}>{night.venueName}</div>
+                    <div style={{color:'var(--text2)', fontSize:'0.85rem'}}>{night.date} · {night.startTime?.substring(0,5)}</div>
+                </div>
+                <div className="form-group">
+                    <label>Your Status <span style={{color:'var(--error)'}}>*</span></label>
+                    <div style={{display:'flex', gap:'0.75rem', marginTop:'0.4rem'}}>
+                        {['GOING','INTERESTED'].map(s => (
+                            <button key={s} onClick={() => setStatus(s)}
+                                    className={`btn btn-sm ${status===s?'btn-primary':'btn-secondary'}`}>
+                                {s === 'GOING' ? '✓ Going' : '★ Interested'}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                <FormInput label="Reserve a table? (optional)" name="tableSize" type="number" value={tableSize}
+                           onChange={(_, v) => { setTableSize(v); setErrors(e => ({...e, tableSize:''})); }}
+                           error={errors.tableSize} placeholder="Number of seats (1-20)" />
+            </Modal>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // PROFILE PAGE
+    // ─────────────────────────────────────────────────────────────────────────────
+    function ProfilePage({ showToast }) {
+        const { token, user, setUser } = useAuth();
+        const [profile, setProfile] = useState(null);
+        const [rsvps, setRsvps] = useState([]);
+        const [editing, setEditing] = useState(false);
+        const [bio, setBio] = useState('');
+        const [loading, setLoading] = useState(true);
+
+        useEffect(() => {
+            Promise.all([
+                apiFetch('/api/users/me', {}, token),
+                apiFetch('/api/users/me/rsvps?page=0&size=20', {}, token),
+            ]).then(([p, r]) => {
+                setProfile(p); setBio(p.bio || '');
+                setRsvps(r.content || []);
+            }).catch(() => showToast('Failed to load profile', 'error'))
+                .finally(() => setLoading(false));
+        }, []);
+
+        const saveProfile = async () => {
+            try {
+                const updated = await apiFetch('/api/users/me', { method:'PUT', body: JSON.stringify({ bio }) }, token);
+                setProfile(updated); setEditing(false);
+                showToast('Profile updated', 'success');
+            } catch { showToast('Update failed', 'error'); }
+        };
+
+        const cancelRsvp = async (nightId) => {
+            if (!confirm('Cancel this RSVP?')) return;
+            try {
+                await apiFetch(`/api/nights/${nightId}/rsvps`, { method:'DELETE' }, token);
+                setRsvps(r => r.filter(x => x.nightId !== nightId));
+                showToast('RSVP cancelled', 'success');
+            } catch(e) { showToast(e.data?.message || 'Failed to cancel', 'error'); }
+        };
+
+        if (loading) return <div className="spinner" />;
+
+        return (
+            <div>
+                <div className="page-header">
+                    <h1 className="page-title">My Profile</h1>
+                </div>
+                <div className="detail-hero" style={{marginBottom:'1.5rem'}}>
+                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:'1rem'}}>
+                        <div>
+                            <div className="detail-title">{profile?.username}</div>
+                            <div style={{color:'var(--text2)', marginBottom:'0.75rem'}}>{profile?.email}</div>
+                            <div style={{display:'flex', gap:'1rem', marginBottom:'0.75rem'}}>
+                                <span style={{fontSize:'0.85rem'}}><strong>{profile?.followingCount}</strong> <span style={{color:'var(--text2)'}}>following</span></span>
+                                <span style={{fontSize:'0.85rem'}}><strong>{profile?.followersCount}</strong> <span style={{color:'var(--text2)'}}>followers</span></span>
+                            </div>
+                            <div style={{display:'flex', gap:'0.4rem', flexWrap:'wrap'}}>
+                                {profile?.roles?.map(r => <span key={r} className="badge badge-gold">{r.replace('ROLE_','')}</span>)}
+                            </div>
+                        </div>
+                        <button className="btn btn-secondary" onClick={() => setEditing(!editing)}>{editing ? 'Cancel' : 'Edit Profile'}</button>
+                    </div>
+                    {editing ? (
+                        <div style={{marginTop:'1.25rem'}}>
+                            <FormTextarea label="Bio" name="bio" value={bio} onChange={(_, v) => setBio(v)} placeholder="Tell people about yourself..." rows={3} />
+                            {bio.length > 500 && <FieldError msg="Bio must be at most 500 characters" />}
+                            <button className="btn btn-primary btn-sm" onClick={saveProfile}>Save Changes</button>
+                        </div>
+                    ) : profile?.bio ? (
+                        <div style={{marginTop:'1rem', color:'var(--text2)'}}>{profile.bio}</div>
+                    ) : null}
+                </div>
+
+                <h2 style={{fontFamily:'var(--font-head)', fontSize:'1.3rem', marginBottom:'1rem'}}>My RSVPs</h2>
+                {rsvps.length === 0 ? (
+                    <div className="empty" style={{padding:'2rem'}}>
+                        <div className="empty-icon">🎫</div>
+                        <h3>No RSVPs yet</h3>
+                        <p>Browse tonight's nights and RSVP to something!</p>
+                    </div>
+                ) : (
+                    <div className="grid-2">
+                        {rsvps.map(r => (
+                            <div key={r.id} className="card">
+                                <div className="card-body">
+                                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
+                                        <div className="night-title">{r.nightTitle}</div>
+                                        <span className={`badge ${r.status==='GOING'?'badge-green':r.status==='CANCELLED'?'badge-gray':'badge-orange'}`}>{r.status}</span>
+                                    </div>
+                                    {r.tableSize && <div className="text-sm" style={{marginTop:'0.4rem'}}>🪑 Table for {r.tableSize}</div>}
+                                </div>
+                                {r.status !== 'CANCELLED' && (
+                                    <div className="card-footer">
+                                        <button className="btn btn-danger btn-sm" onClick={() => cancelRsvp(r.nightId)}>Cancel RSVP</button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 404 PAGE
+    // ─────────────────────────────────────────────────────────────────────────────
+    function NotFoundPage({ onHome }) {
+        return (
+            <div className="error-page">
+                <div className="error-code">404</div>
+                <h1 className="error-title">This night doesn't exist</h1>
+                <p className="error-desc">The page you're looking for has either moved or never existed. Let's get you back on track.</p>
+                <button className="btn btn-primary" onClick={onHome}>Back to Home</button>
+            </div>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 500 PAGE
+    // ─────────────────────────────────────────────────────────────────────────────
+    function ErrorPage({ onHome, message }) {
+        return (
+            <div className="error-page">
+                <div className="error-code">500</div>
+                <h1 className="error-title">Something went wrong</h1>
+                <p className="error-desc">{message || "An unexpected error occurred. Our team has been notified."}</p>
+                <div style={{display:'flex', gap:'1rem'}}>
+                    <button className="btn btn-secondary" onClick={() => window.location.reload()}>Try Again</button>
+                    <button className="btn btn-primary" onClick={onHome}>Back to Home</button>
+                </div>
+            </div>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // APP ROOT
+    // ─────────────────────────────────────────────────────────────────────────────
+    function App() {
+        const [auth, setAuth] = useState(() => {
+            try {
+                const saved = localStorage.getItem('nightout_auth');
+                return saved ? JSON.parse(saved) : null;
+            } catch { return null; }
+        });
+        const [page, setPage] = useState('home');
+        const [toasts, setToasts] = useState([]);
+        const [globalError, setGlobalError] = useState(null);
+
+        const showToast = (message, type = 'success') => {
+            const id = Date.now();
+            setToasts(t => [...t, { id, message, type }]);
+            setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3500);
+        };
+
+        const handleAuth = (data) => {
+            setAuth(data);
+            localStorage.setItem('nightout_auth', JSON.stringify(data));
+            setPage('home');
+            showToast(`Welcome, ${data.user.username}!`, 'success');
+        };
+
+        const logout = () => {
+            setAuth(null);
+            localStorage.removeItem('nightout_auth');
+            setPage('home');
+            showToast('Logged out successfully', 'success');
+        };
+
+        const authCtx = {
+            token: auth?.token || null,
+            user: auth?.user || null,
+            setUser: (u) => setAuth(a => ({...a, user: u})),
+        };
+
+        const navigate = (p) => { setGlobalError(null); setPage(p); };
+
+        const renderPage = () => {
+            if (globalError) return <ErrorPage onHome={() => { setGlobalError(null); navigate('home'); }} message={globalError} />;
+            try {
+                switch(page) {
+                    case 'home':    return <HomePage onNavigate={navigate} showToast={showToast} />;
+                    case 'venues':  return <VenuesPage showToast={showToast} />;
+                    case 'nights':  return <NightsPage showToast={showToast} />;
+                    case 'profile': return auth ? <ProfilePage showToast={showToast} /> : <AuthPage onAuth={handleAuth} />;
+                    case 'login':   return <AuthPage onAuth={handleAuth} />;
+                    case '404':     return <NotFoundPage onHome={() => navigate('home')} />;
+                    default:        return <NotFoundPage onHome={() => navigate('home')} />;
+                }
+            } catch(e) {
+                setGlobalError(e.message);
+                return <ErrorPage onHome={() => { setGlobalError(null); navigate('home'); }} />;
+            }
+        };
+
+        return (
+            <AuthCtx.Provider value={authCtx}>
+                <nav>
+                    <div className="nav-logo" onClick={() => navigate('home')}>NightOut</div>
+                    <div className="nav-links">
+                        <button className={`nav-btn${page==='home'?' active':''}`} onClick={() => navigate('home')}>Home</button>
+                        <button className={`nav-btn${page==='venues'?' active':''}`} onClick={() => navigate('venues')}>Venues</button>
+                        <button className={`nav-btn${page==='nights'?' active':''}`} onClick={() => navigate('nights')}>Nights</button>
+                        {auth && <button className={`nav-btn${page==='profile'?' active':''}`} onClick={() => navigate('profile')}>My Plans</button>}
+                    </div>
+                    <div className="nav-right">
+                        {auth ? (
+                            <>
+                                <div className="nav-user">Signed in as <span>{auth.user.username}</span></div>
+                                <button className="btn btn-secondary btn-sm" onClick={logout}>Sign Out</button>
+                            </>
+                        ) : (
+                            <button className="btn btn-primary btn-sm" onClick={() => navigate('login')}>Sign In</button>
+                        )}
+                    </div>
+                </nav>
+                <main>{renderPage()}</main>
+                <ToastContainer toasts={toasts} />
+            </AuthCtx.Provider>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // HOME PAGE
+    // ─────────────────────────────────────────────────────────────────────────────
+    function HomePage({ onNavigate, showToast }) {
+        const { token } = useAuth();
+        const [featuredNights, setFeaturedNights] = useState([]);
+        const [topVenues, setTopVenues] = useState([]);
+
+        useEffect(() => {
+            apiFetch('/api/nights/tonight?page=0&size=3', {}, token)
+                .then(d => setFeaturedNights(d.content || []))
+                .catch(() => {});
+            apiFetch('/api/venues?page=0&size=3&sort=averageRating,desc', {}, token)
+                .then(d => setTopVenues(d.content || []))
+                .catch(() => {});
+        }, []);
+
+        return (
+            <div>
+                <div className="hero">
+                    <h1>Your City's Nightlife,<br />Tonight</h1>
+                    <p>Discover where to go, see what your friends are doing, and RSVP in seconds.</p>
+                    <div className="hero-actions">
+                        <button className="btn btn-primary" onClick={() => onNavigate('nights')}>Browse Tonight</button>
+                        <button className="btn btn-secondary" onClick={() => onNavigate('venues')}>Explore Venues</button>
+                    </div>
+                </div>
+
+                {featuredNights.length > 0 && (
+                    <section style={{marginBottom:'3rem'}}>
+                        <div className="page-header">
+                            <div>
+                                <h2 style={{fontFamily:'var(--font-head)', fontSize:'1.5rem'}}>Tonight's Highlights</h2>
+                                <p className="page-subtitle">Happening right now in your city</p>
+                            </div>
+                            <button className="btn btn-secondary btn-sm" onClick={() => onNavigate('nights')}>See all →</button>
+                        </div>
+                        <div className="grid-3">
+                            {featuredNights.map(n => (
+                                <div key={n.id} className="card">
+                                    <div className="card-body">
+                                        {n.specialGuest && <span className="badge badge-gold" style={{marginBottom:'0.5rem', display:'inline-block'}}>★ {n.guestName}</span>}
+                                        <div className="night-title">{n.title}</div>
+                                        <div className="night-venue">📍 {n.venueName}</div>
+                                        <div className="night-time">{n.startTime?.substring(0,5)}{n.theme && ` · ${n.theme}`}</div>
+                                        {n.tags?.length > 0 && <div className="night-tags">{n.tags.slice(0,3).map(t => <span key={t} className="night-tag">{t}</span>)}</div>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {topVenues.length > 0 && (
+                    <section>
+                        <div className="page-header">
+                            <div>
+                                <h2 style={{fontFamily:'var(--font-head)', fontSize:'1.5rem'}}>Top Rated Venues</h2>
+                                <p className="page-subtitle">Ranked by rating and social activity</p>
+                            </div>
+                            <button className="btn btn-secondary btn-sm" onClick={() => onNavigate('venues')}>See all →</button>
+                        </div>
+                        <div className="grid-3">
+                            {topVenues.map(v => (
+                                <div key={v.id} className="card">
+                                    <div className="card-body">
+                                        <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'0.5rem'}}>
+                                            <div>
+                                                <div className="venue-name">{v.name}</div>
+                                                <div className="venue-city">📍 {v.city}</div>
+                                            </div>
+                                            {v.verified && <span className="badge badge-green">✓</span>}
+                                        </div>
+                                        <div className="venue-rating">
+                                            <Stars value={Math.round(v.averageRating)} readOnly />
+                                            <span className="venue-rating-num">{v.averageRating?.toFixed(1)}</span>
+                                        </div>
+                                        <div className="venue-meta">
+                                            <span className="badge badge-gray">{v.type}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+            </div>
+        );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
