@@ -22,7 +22,6 @@
 12. [Monitoring](#12-monitoring)
 13. [Microservices Architecture](#13-microservices-architecture)
 14. [Deployment](#14-deployment)
-15. [Team Contributions](#15-team-contributions)
 
 ---
 
@@ -525,20 +524,6 @@ cd nightout-microservices && docker compose up --build
     - `SPRING_DATA_REDIS_HOST=...`
     - `APP_JWT_SECRET=<minimum 32 char secret>`
 4. Deploy — the Dockerfile is picked up automatically
-
----
-
-## 15. Team Contributions
-
-| Member | Responsibilities |
-|---|---|
-| [Name 1] | Domain model, all repositories, VenueService, VenueController, Redis caching |
-| [Name 2] | Spring Security, JWT, AuthService, UserService, AuthController, UserController |
-| [Name 3] | NightService, RsvpService, NightController, tests, Docker, monitoring |
-
-> Update this table with your actual names and split of work before submission.
-> The professor will check git commit history — make sure each member has
-> meaningful commits across the codebase.
 
 ---
 
