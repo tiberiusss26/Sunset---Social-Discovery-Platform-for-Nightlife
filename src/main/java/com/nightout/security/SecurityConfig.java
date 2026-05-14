@@ -49,6 +49,8 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         // ── ROLE-PROTECTED ─────────────────────────────────────────
+                        .requestMatchers(HttpMethod.POST, "/api/venues/*/ratings")
+                        .authenticated() // authenticated users can leave ratings
                         .requestMatchers(HttpMethod.POST, "/api/venues/**")
                         .hasAnyRole("VENUE_OWNER", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/venues/**")
