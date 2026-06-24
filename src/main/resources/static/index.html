@@ -600,7 +600,7 @@
             try {
                 const path = q
                     ? `/api/venues/search?q=${encodeURIComponent(q)}&page=${p}&size=12`
-                    : `/api/venues?page=${p}&size=12&sort=averageRating,desc`;
+                    : `/api/venues?page=${p}&size=12`;
                 const data = await apiFetch(path, {}, token);
                 setVenues(data.content || []);
                 setTotalPages(data.totalPages || 0);

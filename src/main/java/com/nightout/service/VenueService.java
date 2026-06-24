@@ -110,8 +110,14 @@ public class VenueService {
                 ? List.of(UUID.fromString("00000000-0000-0000-0000-000000000000"))
                 : followingIds;
 
+        Pageable cleanPageable =
+                org.springframework.data.domain.PageRequest.of(
+                        pageable.getPageNumber(),
+                        pageable.getPageSize()
+                );
+
         Page<VenueSummary> page = venueRepository
-                .findRankedVenues(date, ids, pageable)
+                .findRankedVenues(date, ids, cleanPageable)
                 .map(v -> mapToSummary(v, 0));
 
         log.debug("Ranked feed: {} results for user {} on {}", page.getTotalElements(), userId, date);
